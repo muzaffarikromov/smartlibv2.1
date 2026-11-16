@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="uz" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartLib v1.0 Beta — Boshqaruv Tizimi</title>
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .active-tab {
+            background-color: #2563eb !important;
+            color: white !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col md:flex-row transition-colors duration-200">
+
+    <!-- SIDEBAR -->
+    <aside class="w-full md:w-64 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 flex-shrink-0 p-5 flex flex-col justify-between border-r border-slate-200 dark:border-slate-800 transition-colors">
+        <div>
+            <!-- Logo -->
+            <div class="flex items-center space-x-3 mb-8">
+                <div class="bg-blue-600 p-2 rounded-xl text-white shadow-lg shadow-blue-500/30">
+                    <i data-lucide="book-open" class="w-6 h-6"></i>
+                </div>
+                <div class="flex flex-col">
+                    <span class="font-bold text-lg tracking-wide leading-none text-slate-900 dark:text-white">SmartLib</span>
+                    <span class="text-[10px] text-blue-600 dark:text-blue-400 font-mono mt-1">v1.0 Beta</span>
+                </div>
+            </div>
+
+            <!-- Menu -->
+            <nav class="space-y-2">
+                <button onclick="switchTab('dashboard')" id="btn-dashboard" class="nav-btn active-tab w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition text-left">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    <span>Boshqaruv Paneli</span>
+                </button>
+                <button onclick="switchTab('books')" id="btn-books" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition text-left">
+                    <i data-lucide="book" class="w-5 h-5"></i>
+                    <span>Kitoblar Bazasi</span>
+                </button>
+                <button onclick="switchTab('issue')" id="btn-issue" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition text-left">
+                    <i data-lucide="arrow-right-left" class="w-5 h-5"></i>
+                    <span>Kitob Berish / Olish</span>
+                </button>
+                <button onclick="switchTab('borrowers')" id="btn-borrowers" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition text-left">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                    <span>Ijaradagilar Tizimi</span>
+                </button>
+            </nav>
+        </div>
+
+        <div class="mt-8 pt-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
+            <!-- Zaxira nusxa -->
+            <div class="grid grid-cols-2 gap-2">
+                <button type="button" onclick="exportData()" class="px-2 py-2 text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">⬇️ Zaxira nusxa</button>
+                <button type="button" onclick="document.getElementById('import-file').click()" class="px-2 py-2 text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">⬆️ Tiklash</button>
+            </div>
+            <input type="file" id="import-file" accept=".json,application/json" class="hidden" onchange="importData(event)">
+            <p id="db-status" class="text-[11px] text-slate-400 px-1">Baza tekshirilmoqda...</p>
+
+            <!-- Tungi / Yorug' rejim -->
+            <button type="button" onclick="toggleTheme()" class="w-full flex items-center justify-between px-3 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition cursor-pointer">
+                <div class="flex items-center space-x-2 text-xs font-medium">
+                    <span id="theme-icon">🌙</span>
+                    <span id="theme-text">Tungi rejim</span>
+                </div>
+                <span class="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-200 dark:bg-slate-900 px-2 py-0.5 rounded-md font-mono">Rejim</span>
+            </button>
+
+            <!-- Tizimni reset qilish -->
+            <div class="text-xs text-slate-400 dark:text-slate-500 flex justify-between items-center px-1">
+                <span>&copy; 2026 Maktab Lib</span>
+                <button type="button" onclick="resetToDefaults()" title="Bazani 0 ga tushirish" class="text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-300 hover:underline cursor-pointer font-semibold transition">
+                    Tizimni nolga tushirish
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 p-6 md:p-10 overflow-y-auto min-h-screen flex flex-col justify-between">
+
+        <div class="space-y-6">
+            <!-- TAB 1: DASHBOARD -->
+            <section id="tab-dashboard" class="tab-content space-y-6">
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Boshqaruv Paneli</h1>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm">Real vaqt rejimida dinamik hisob-kitoblar va kechikishlar monitoringi</p>
+                </div>
+
+                <!-- STATS CARDS -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between transition-colors">
+                        <div>
+                            <p class="text-slate-400 dark:text-slate-500 text-xs font-semibold uppercase">Jami Kitoblar (Soni)</p>
+                            <h3 class="text-2xl font-bold mt-1 text-slate-800 dark:text-white" id="stat-total">0</h3>
+                        </div>
+                        <div class="bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 p-3 rounded-xl"><i data-lucide="library"></i></div>
+                    </div>
+                    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between transition-colors">
+                        <div>
+                            <p class="text-slate-400 dark:text-slate-500 text-xs font-semibold uppercase">Kutubxonada Mavjud</p>
+                            <h3 class="text-2xl font-bold mt-1 text-emerald-600 dark:text-emerald-400" id="stat-available">0</h3>
+                        </div>
+                        <div class="bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 p-3 rounded-xl"><i data-lucide="check-circle-2"></i></div>
+                    </div>
+                    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between transition-colors">
+                        <div>
+                            <p class="text-slate-400 dark:text-slate-500 text-xs font-semibold uppercase">Qo'ldagi (Ijaradagi)</p>
+                            <h3 class="text-2xl font-bold mt-1 text-indigo-600 dark:text-indigo-400" id="stat-borrowed">0</h3>
+                        </div>
+                        <div class="bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 p-3 rounded-xl"><i data-lucide="book-up"></i></div>
+                    </div>
+                    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between transition-colors">
+                        <div>
+                            <p class="text-slate-400 dark:text-slate-500 text-xs font-semibold uppercase">Muddati O'tganlar</p>
+                            <h3 class="text-2xl font-bold mt-1 text-rose-600 dark:text-rose-400" id="stat-overdue">0</h3>
+                        </div>
+                        <div class="bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 p-3 rounded-xl"><i data-lucide="alert-circle"></i></div>
+                    </div>
+                </div>
+
+                <!-- UZUN LEADERBOARD BOARD -->
+                <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-6 space-y-4 shadow-sm transition-colors min-h-[400px]">
+                    <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2.5 bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 rounded-xl">
+                                <i data-lucide="clock-alert" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-xl text-slate-800 dark:text-white">Muddati O'tgan Kitoblar Leaderboardi</h3>
+                                <p class="text-xs text-slate-400 dark:text-slate-500">Kitobni topshirish muddatini o'tkazib yuborgan o'quvchilar ro'yxati</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm text-slate-700 dark:text-slate-300">
+                            <thead class="bg-slate-50 dark:bg-slate-800/60 text-slate-400 dark:text-slate-400 uppercase text-xs font-semibold">
+                                <tr>
+                                    <th class="p-4">#</th>
+                                    <th class="p-4">O'quvchi F.I.O.</th>
+                                    <th class="p-4">Sinfi</th>
+                                    <th class="p-4">Kitob Nomi</th>
+                                    <th class="p-4">Olingan Sana</th>
+                                    <th class="p-4">Qaytarish Muddati</th>
+                                    <th class="p-4 text-right">Kechikish (Kunda)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="overdueLeaderboardBody" class="divide-y divide-slate-100 dark:divide-slate-800">
+                                <!-- JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: BOOKS DATABASE -->
+            <section id="tab-books" class="tab-content hidden space-y-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Kitoblar Katalogi</h1>
+                        <p class="text-slate-500 dark:text-slate-400 text-sm">Kitoblarni tahrirlash, o'chirish va yangi qo'shish paneli</p>
+                    </div>
+                    <button onclick="openBookModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-medium flex items-center space-x-2 shadow-sm transition">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        <span>Yangi kitob qo'shish</span>
+                    </button>
+                </div>
+
+                <!-- SEARCH BAR -->
+                <div class="relative">
+                    <i data-lucide="search" class="w-5 h-5 absolute left-3 top-3 text-slate-400"></i>
+                    <input type="text" id="searchInput" onkeyup="filterBooks()" placeholder="Nomi, muallifi yoki ISBN kodi bo'yicha qidirish..." class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white transition-colors">
+                </div>
+
+                <!-- BOOKS TABLE -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
+                    <table class="w-full text-left text-sm text-slate-600 dark:text-slate-300">
+                        <thead class="bg-slate-50 dark:bg-slate-800/50 text-slate-400 dark:text-slate-400 uppercase text-xs font-semibold">
+                            <tr>
+                                <th class="p-4">ISBN / Kod</th>
+                                <th class="p-4">Kitob Nomi</th>
+                                <th class="p-4">Muallif</th>
+                                <th class="p-4">Javon</th>
+                                <th class="p-4">Mavjud / Jami</th>
+                                <th class="p-4 text-right">Amallar</th>
+                            </tr>
+                        </thead>
+                        <tbody id="booksTableBody" class="divide-y divide-slate-100 dark:divide-slate-800">
+                            <!-- JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- TAB 3: ISSUE / RETURN -->
+            <section id="tab-issue" class="tab-content hidden space-y-6">
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Kitob Topshirish va Qabul Qilish</h1>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm">O'quvchiga kitob berish va qaytarish vaqtini belgilash</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- ISSUE FORM -->
+                    <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4 transition-colors">
+                        <h3 class="font-bold text-lg text-slate-800 dark:text-white flex items-center space-x-2">
+                            <i data-lucide="book-up" class="text-blue-600 dark:text-blue-400"></i>
+                            <span>Kitobni O'quvchiga Berish</span>
+                        </h3>
+                        <form onsubmit="handleIssueBook(event)" class="space-y-4">
+                            <!-- KITOB QIDIRISH VA TANLASH -->
+                            <div id="issue-book-box" class="relative">
+                                <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-1">Kitobni Qidiring</label>
+                                <div class="relative">
+                                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3.5 text-slate-400"></i>
+                                    <input type="text" id="issue-book-search" autocomplete="off" placeholder="Nomi, muallifi yoki ISBN..."
+                                           oninput="onIssueBookInput()" onfocus="showIssueResults()" onkeydown="onIssueBookKey(event)"
+                                           class="w-full pl-9 pr-4 py-2.5 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-800 text-slate-900 dark:text-white">
+                                </div>
+                                <input type="hidden" id="issue-book-id">
+                                <div id="issue-book-results" class="hidden absolute left-0 right-0 mt-1 z-30 max-h-64 overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg"></div>
+                                <p id="issue-book-chip" class="hidden mt-2 text-xs font-medium text-emerald-700 dark:text-emerald-400"></p>
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-3">
+                                <div class="col-span-2">
+                                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-1">O'quvchi F.I.O.</label>
+                                    <input type="text" id="issue-user-name" required placeholder="Sardor Rahimov" class="w-full border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-800 text-slate-900 dark:text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-1">Sinfi</label>
+                                    <input type="text" id="issue-user-class" required placeholder="9-A" class="w-full border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-800 text-slate-900 dark:text-white">
+                                </div>
+                            </div>
+
+                            <!-- MASKALANGAN VA KALENDARLIK SANA INPUTI (DD.MM.YYYY) -->
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                                    Qaytarish Muddati (DD.MM.YYYY)
+                                </label>
+                                <div class="relative">
+                                    <input type="text" id="issue-due-date-text" placeholder="19.09.2026" maxlength="10" required
+                                           oninput="formatDateInput(this)"
+                                           class="w-full border border-slate-200 dark:border-slate-800 p-2.5 pr-10 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono">
+
+                                    <input type="date" id="issue-due-date-picker" onchange="syncPickerToText(this)" class="sr-only">
+                                    <button type="button" onclick="document.getElementById('issue-due-date-picker').showPicker()" class="absolute right-3 top-2.5 text-slate-400 hover:text-blue-500">
+                                        <i data-lucide="calendar" class="w-5 h-5"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition">
+                                Rasmiylashtirish
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- RETURN FORM -->
+                    <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4 transition-colors">
+                        <h3 class="font-bold text-lg text-slate-800 dark:text-white flex items-center space-x-2">
+                            <i data-lucide="book-down" class="text-emerald-600 dark:text-emerald-400"></i>
+                            <span>Kitobni Qaytarib Olish</span>
+                        </h3>
+
+                        <div class="relative">
+                            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+                            <input type="text" id="searchReturnInput" onkeyup="renderActiveBorrowsList()" placeholder="O'quvchi ismi yoki sinfi bo'yicha qidirish..." class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white">
+                        </div>
+
+                        <div id="activeBorrowsList" class="space-y-3 max-h-[350px] overflow-y-auto pr-1">
+                            <!-- JS -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: BORROWERS LIST -->
+            <section id="tab-borrowers" class="tab-content hidden space-y-6">
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Ijaradagilar Tizimi</h1>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm">Hozirda kitob olib ketgan barcha kitobxonlar monitoringi</p>
+                </div>
+
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
+                    <table class="w-full text-left text-sm text-slate-600 dark:text-slate-300">
+                        <thead class="bg-slate-50 dark:bg-slate-800/50 text-slate-400 dark:text-slate-400 uppercase text-xs font-semibold">
+                            <tr>
+                                <th class="p-4">O'quvchi</th>
+                                <th class="p-4">Sinfi</th>
+                                <th class="p-4">Kitob Nomi</th>
+                                <th class="p-4">Olingan Sana</th>
+                                <th class="p-4">Qaytarish Muddati</th>
+                                <th class="p-4 text-right">Amal</th>
+                            </tr>
+                        </thead>
+                        <tbody id="borrowersTableBody" class="divide-y divide-slate-100 dark:divide-slate-800">
+                            <!-- JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+    </main>
+
+    <!-- MODAL: ADD / EDIT BOOK -->
+    <div id="bookModal" class="fixed inset-0 bg-slate-900/40 dark:bg-slate-950/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4 border border-slate-200 dark:border-slate-800 transition-colors">
+            <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
+                <h3 class="font-bold text-lg text-slate-800 dark:text-white" id="modalTitle">Yangi Kitob Qo'shish</h3>
+                <button type="button" onclick="closeBookModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"><i data-lucide="x"></i></button>
+            </div>
+            <form onsubmit="handleSaveBook(event)" class="space-y-3">
+                <input type="hidden" id="edit-book-index">
+                <div>
+                    <label class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Kitob Nomi</label>
+                    <input type="text" id="modal-title" required class="w-full border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-white">
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Muallif</label>
+                    <input type="text" id="modal-author" required class="w-full border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-white">
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">ISBN / Kod</label>
+                    <input type="text" id="modal-isbn" required class="w-full border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-white">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Javon O'rni</label>
+                        <input type="text" id="modal-shelf" placeholder="A-3" required class="w-full border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Umumiy Soni</label>
+                        <input type="number" id="modal-total" min="1" value="1" required class="w-full border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-white">
+                    </div>
+                </div>
+                <div class="pt-3 flex space-x-3">
+                    <button type="button" onclick="closeBookModal()" class="w-1/2 border border-slate-200 dark:border-slate-800 py-2.5 rounded-xl font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition">Bekor qilish</button>
+                    <button type="submit" class="w-1/2 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-semibold transition">Saqlash</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // Ma'lumotlar bazadan (IndexedDB) yuklanadi. localStorage zaxira nusxa sifatida ishlatiladi.
+        let books = [];
+        let borrowers = [];
+        try {
+            books = JSON.parse(localStorage.getItem('lib_books')) || [];
+            borrowers = JSON.parse(localStorage.getItem('lib_borrowers')) || [];
+        } catch (e) {}
+
+        const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+        /* ===== MA'LUMOTLAR BAZASI (IndexedDB) ===== */
+        const DB = {
+            db: null,
+            open() {
+                return new Promise((resolve, reject) => {
+                    if (!window.indexedDB) return reject(new Error("IndexedDB mavjud emas"));
+                    const req = indexedDB.open('smartlib_db', 1);
+                    req.onupgradeneeded = () => req.result.createObjectStore('kv');
+                    req.onsuccess = () => { DB.db = req.result; resolve(); };
+                    req.onerror = () => reject(req.error);
+                });
+            },
+            getAll() {
+                return new Promise((resolve, reject) => {
+                    const tx = DB.db.transaction('kv', 'readonly');
+                    const s = tx.objectStore('kv');
+                    const rb = s.get('books'), rr = s.get('borrowers');
+                    tx.oncomplete = () => resolve({ books: rb.result, borrowers: rr.result });
+                    tx.onerror = () => reject(tx.error);
+                });
+            },
+            saveAll(b, r) {
+                return new Promise((resolve, reject) => {
+                    const tx = DB.db.transaction('kv', 'readwrite');
+                    tx.objectStore('kv').put(b, 'books');
+                    tx.objectStore('kv').put(r, 'borrowers');
+                    tx.oncomplete = resolve;
+                    tx.onerror = () => reject(tx.error);
+                });
+            }
+        };
+
+        function setDbStatus(ok) {
+            const el = document.getElementById('db-status');
+            if (!el) return;
+            el.textContent = ok ? "💾 Ma'lumotlar bazaga saqlanmoqda" : "⚠️ Baza ishlamayapti (faqat localStorage)";
+        }
+
+        function saveData() {
+            try {
+                localStorage.setItem('lib_books', JSON.stringify(books));
+                localStorage.setItem('lib_borrowers', JSON.stringify(borrowers));
+            } catch (e) {}
+            if (DB.db) DB.saveAll(books, borrowers).then(() => setDbStatus(true)).catch(() => setDbStatus(false));
+            updateAllViews();
+        }
+
+        /* ===== ZAXIRA NUSXA (EXPORT / IMPORT) ===== */
+        function exportData() {
+            const blob = new Blob([JSON.stringify({ books, borrowers }, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `smartlib-zaxira-${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+        }
+
+        function importData(ev) {
+            const file = ev.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                try {
+                    const d = JSON.parse(reader.result);
+                    if (!Array.isArray(d.books) || !Array.isArray(d.borrowers)) throw new Error('format');
+                    if (confirm("Hozirgi barcha ma'lumotlar zaxira fayldagisi bilan almashtiriladi. Rozimisiz?")) {
+                        books = d.books;
+                        borrowers = d.borrowers;
+                        saveData();
+                        alert("Ma'lumotlar muvaffaqiyatli tiklandi!");
+                    }
+                } catch (err) {
+                    alert("Fayl noto'g'ri formatda!");
+                }
+                ev.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        /* ===== SANA FUNKSIYALARI ===== */
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const parts = dateStr.split('-');
+            if (parts.length === 3) {
+                return `${parts[2]}.${parts[1]}.${parts[0]}`;
+            }
+            return dateStr;
+        }
+
+        function formatDateInput(input) {
+            let value = input.value.replace(/\D/g, '');
+            if (value.length > 8) value = value.substring(0, 8);
+
+            if (value.length >= 5) {
+                input.value = `${value.substring(0, 2)}.${value.substring(2, 4)}.${value.substring(4)}`;
+            } else if (value.length >= 3) {
+                input.value = `${value.substring(0, 2)}.${value.substring(2)}`;
+            } else {
+                input.value = value;
+            }
+        }
+
+        function syncPickerToText(picker) {
+            if (!picker.value) return;
+            const [year, month, day] = picker.value.split('-');
+            document.getElementById('issue-due-date-text').value = `${day}.${month}.${year}`;
+        }
+
+        function setDefaultDueDate() {
+            const defaultDate = new Date();
+            defaultDate.setDate(defaultDate.getDate() + 14);
+
+            const day = String(defaultDate.getDate()).padStart(2, '0');
+            const month = String(defaultDate.getMonth() + 1).padStart(2, '0');
+            const year = defaultDate.getFullYear();
+
+            const textInput = document.getElementById('issue-due-date-text');
+            if (textInput) textInput.value = `${day}.${month}.${year}`;
+        }
+
+        /* ===== MAVZU (TUNGI / YORUG') ===== */
+        function initTheme() {
+            let savedTheme = null;
+            try { savedTheme = localStorage.getItem('theme'); } catch (e) {}
+            if (savedTheme === 'dark') {
+                document.documentElement.classList.add('dark');
+                updateThemeUI(true);
+            } else {
+                document.documentElement.classList.remove('dark');
+                updateThemeUI(false);
+            }
+        }
+
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            try { localStorage.setItem('theme', isDark ? 'dark' : 'light'); } catch (e) {}
+            updateThemeUI(isDark);
+        }
+
+        function updateThemeUI(isDark) {
+            const icon = document.getElementById('theme-icon');
+            const text = document.getElementById('theme-text');
+            if (icon && text) {
+                icon.innerText = isDark ? '☀️' : '🌙';
+                text.innerText = isDark ? "Yorug' rejim" : 'Tungi rejim';
+            }
+        }
+
+        function resetToDefaults() {
+            if (confirm("Diqqat! Barcha kiritilgan ma'lumotlar o'chib, tizim 0 holatiga tushadi. Rozimisiz?")) {
+                books = [];
+                borrowers = [];
+                saveData();
+                alert("Tizim muvaffaqiyatli 0 ga tushirildi!");
+            }
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active-tab'));
+
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            document.getElementById(`btn-${tabName}`).classList.add('active-tab');
+        }
+
+        function getDaysOverdue(dueDateStr) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const due = new Date(dueDateStr);
+            due.setHours(0, 0, 0, 0);
+            const diffTime = today - due;
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays > 0 ? diffDays : 0;
+        }
+
+        function updateAllViews() {
+            renderDashboard();
+            renderBooksTable(books);
+            renderIssueSelect();
+            renderActiveBorrowsList();
+            renderBorrowersTable();
+            try { lucide.createIcons(); } catch(e){}
+        }
+
+        function renderDashboard() {
+            const totalCopies = books.reduce((acc, b) => acc + parseInt(b.total || 0), 0);
+            const availableCopies = books.reduce((acc, b) => acc + parseInt(b.available || 0), 0);
+            const borrowedCopies = totalCopies - availableCopies;
+
+            const overdueBorrowers = borrowers.map(b => ({
+                ...b,
+                daysOverdue: getDaysOverdue(b.dueDate)
+            })).filter(b => b.daysOverdue > 0).sort((a, b) => b.daysOverdue - a.daysOverdue);
+
+            document.getElementById('stat-total').innerText = totalCopies;
+            document.getElementById('stat-available').innerText = availableCopies;
+            document.getElementById('stat-borrowed').innerText = borrowedCopies;
+            document.getElementById('stat-overdue').innerText = overdueBorrowers.length;
+
+            const overdueLeaderboardBody = document.getElementById('overdueLeaderboardBody');
+            if (overdueBorrowers.length === 0) {
+                overdueLeaderboardBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="p-12 text-center text-slate-400">
+                            <div class="flex flex-col items-center justify-center space-y-2">
+                                <i data-lucide="check-circle" class="w-10 h-10 text-emerald-500"></i>
+                                <p class="text-base font-semibold text-slate-700 dark:text-slate-300">Ajoyib! Muddati o'tgan kitoblar mavjud emas.</p>
+                                <p class="text-xs text-slate-400">Barcha kitoblar o'z vaqtida qaytarilmoqda.</p>
+                            </div>
+                        </td>
+                    </tr>`;
+            } else {
+                overdueLeaderboardBody.innerHTML = overdueBorrowers.map((b, idx) => `
+                    <tr class="hover:bg-rose-50/30 dark:hover:bg-rose-950/10 transition">
+                        <td class="p-4 font-mono font-bold text-slate-400 text-xs">${idx + 1}</td>
+                        <td class="p-4 font-semibold text-slate-800 dark:text-slate-200">${esc(b.userName)}</td>
+                        <td class="p-4"><span class="bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-200 text-xs px-2.5 py-1 rounded font-mono font-bold">${esc(b.userClass || '-')}</span></td>
+                        <td class="p-4 font-medium text-slate-700 dark:text-slate-300">${esc(b.bookTitle)}</td>
+                        <td class="p-4 text-xs font-medium text-slate-500 dark:text-slate-400">${formatDate(b.issueDate)}</td>
+                        <td class="p-4 text-xs font-semibold text-rose-600 dark:text-rose-400">${formatDate(b.dueDate)}</td>
+                        <td class="p-4 text-right">
+                            <span class="inline-flex items-center space-x-1 font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 px-3 py-1 rounded-full text-xs">
+                                <span>+${b.daysOverdue} kun</span>
+                            </span>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        function renderBooksTable(dataList) {
+            const tbody = document.getElementById('booksTableBody');
+            tbody.innerHTML = '';
+
+            if (dataList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400 text-sm">Bazada kitoblar mavjud emas. Yangi kitob qo'shing.</td></tr>`;
+                return;
+            }
+
+            dataList.forEach((book) => {
+                const index = books.indexOf(book);
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="p-4 font-mono text-xs font-semibold text-blue-600 dark:text-blue-400">${esc(book.id)}</td>
+                    <td class="p-4 font-medium text-slate-800 dark:text-slate-200">${esc(book.title)}</td>
+                    <td class="p-4">${esc(book.author)}</td>
+                    <td class="p-4"><span class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-lg text-xs font-semibold">${esc(book.shelf)}</span></td>
+                    <td class="p-4">
+                        <span class="${book.available > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'} font-bold">
+                            ${book.available} / ${book.total} ta
+                        </span>
+                    </td>
+                    <td class="p-4 text-right space-x-2">
+                        <button type="button" onclick="openBookModal(${index})" class="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg transition" title="Tahrirlash">✏️</button>
+                        <button type="button" onclick="deleteBook(${index})" class="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg transition" title="O'chirish">🗑️</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterBooks() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = books.filter(b =>
+                b.title.toLowerCase().includes(query) ||
+                b.author.toLowerCase().includes(query) ||
+                String(b.id).toLowerCase().includes(query)
+            );
+            renderBooksTable(filtered);
+        }
+
+        function openBookModal(index = null) {
+            const modal = document.getElementById('bookModal');
+            const form = modal.querySelector('form');
+            form.reset();
+
+            if (index !== null) {
+                document.getElementById('modalTitle').innerText = "Kitobni Tahrirlash";
+                document.getElementById('edit-book-index').value = index;
+                document.getElementById('modal-title').value = books[index].title;
+                document.getElementById('modal-author').value = books[index].author;
+                document.getElementById('modal-isbn').value = books[index].id;
+                document.getElementById('modal-shelf').value = books[index].shelf;
+                document.getElementById('modal-total').value = books[index].total;
+            } else {
+                document.getElementById('modalTitle').innerText = "Yangi Kitob Qo'shish";
+                document.getElementById('edit-book-index').value = "";
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeBookModal() {
+            const modal = document.getElementById('bookModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function handleSaveBook(e) {
+            e.preventDefault();
+            try {
+                saveBookFromForm();
+            } catch (err) {
+                console.error(err);
+                alert("Saqlashda xatolik: " + err.message);
+            }
+        }
+
+        function saveBookFromForm() {
+            const index = document.getElementById('edit-book-index').value;
+            const title = document.getElementById('modal-title').value;
+            const author = document.getElementById('modal-author').value;
+            const isbn = document.getElementById('modal-isbn').value;
+            const shelf = document.getElementById('modal-shelf').value;
+            const total = parseInt(document.getElementById('modal-total').value);
+
+            if (index !== "") {
+                const oldTotal = books[index].total;
+                const diff = total - oldTotal;
+                books[index].title = title;
+                books[index].author = author;
+                books[index].id = isbn;
+                books[index].shelf = shelf;
+                books[index].total = total;
+                books[index].available = Math.max(0, books[index].available + diff);
+            } else {
+                books.unshift({ id: isbn, title, author, shelf, available: total, total });
+            }
+
+            saveData();
+            closeBookModal();
+        }
+
+        function deleteBook(index) {
+            const book = books[index];
+            if (borrowers.some(b => b.bookId === book.id)) {
+                alert("Ushbu kitob ijarada bo'lgani uchun uni o'chira olmaysiz!");
+                return;
+            }
+
+            if (confirm(`"${book.title}" kitobini bazadan o'chirmoqchimisiz?`)) {
+                books.splice(index, 1);
+                saveData();
+            }
+        }
+
+        /* ===== KITOB QIDIRISH VA TANLASH (kitob berish formasi) ===== */
+        let issueMatches = [], issueActive = -1;
+
+        function showIssueResults(keepActive) {
+            const input = document.getElementById('issue-book-search');
+            const box = document.getElementById('issue-book-results');
+            if (!input || !box || document.getElementById('issue-book-id').value) return;
+            const q = input.value.toLowerCase().trim();
+            issueMatches = books.map((b, i) => ({ b, i })).filter(({ b }) =>
+                !q || b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q) || String(b.id).toLowerCase().includes(q)
+            ).slice(0, 30);
+            if (!keepActive) issueActive = issueMatches.findIndex(m => m.b.available > 0);
+
+            box.innerHTML = issueMatches.length ? issueMatches.map((m, k) => {
+                const free = m.b.available > 0;
+                return `<button type="button" data-active="${k === issueActive ? 1 : 0}" ${free ? '' : 'disabled'}
+                    onmousedown="event.preventDefault(); selectIssueBook(${m.i})"
+                    class="w-full text-left px-3.5 py-2.5 flex items-center justify-between gap-3 border-b last:border-0 border-slate-100 dark:border-slate-800 ${k === issueActive ? 'bg-blue-50 dark:bg-slate-800' : ''} ${free ? 'hover:bg-blue-50 dark:hover:bg-slate-800' : 'opacity-50 cursor-not-allowed'}">
+                    <span class="min-w-0">
+                        <span class="block text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">${esc(m.b.title)}</span>
+                        <span class="block text-xs text-slate-500 dark:text-slate-400 truncate">${esc(m.b.author)} | ${esc(m.b.id)} | ${esc(m.b.shelf)}</span>
+                    </span>
+                    <span class="text-xs font-bold whitespace-nowrap ${free ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">${free ? m.b.available + ' ta' : 'Qolmagan'}</span>
+                </button>`;
+            }).join('') : `<div class="p-4 text-sm text-center text-slate-400">${books.length ? 'Kitob topilmadi' : "Bazada kitoblar yo'q"}</div>`;
+
+            box.classList.remove('hidden');
+            const act = box.querySelector('[data-active="1"]');
+            if (act) act.scrollIntoView({ block: 'nearest' });
+        }
+
+        function onIssueBookInput() {
+            document.getElementById('issue-book-id').value = '';
+            document.getElementById('issue-book-chip').classList.add('hidden');
+            showIssueResults();
+        }
+
+        function selectIssueBook(i) {
+            const b = books[i];
+            if (!b || b.available <= 0) return;
+            document.getElementById('issue-book-id').value = b.id;
+            document.getElementById('issue-book-search').value = b.title;
+            document.getElementById('issue-book-results').classList.add('hidden');
+            const chip = document.getElementById('issue-book-chip');
+            chip.textContent = `✓ Tanlandi: ${b.title} — ${b.author} (${b.available} ta qolgan)`;
+            chip.classList.remove('hidden');
+        }
+
+        function clearIssueBook() {
+            ['issue-book-id', 'issue-book-search'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+            document.getElementById('issue-book-chip')?.classList.add('hidden');
+            document.getElementById('issue-book-results')?.classList.add('hidden');
+        }
+
+        function onIssueBookKey(e) {
+            const box = document.getElementById('issue-book-results');
+            const n = issueMatches.length;
+            if (e.key === 'Escape') { box.classList.add('hidden'); return; }
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (box.classList.contains('hidden')) return;
+                const m = issueMatches[issueActive];
+                if (m) selectIssueBook(m.i);
+                return;
+            }
+            if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && n) {
+                e.preventDefault();
+                const dir = e.key === 'ArrowDown' ? 1 : -1;
+                let k = issueActive;
+                for (let t = 0; t < n; t++) {
+                    k = (k + dir + n) % n;
+                    if (issueMatches[k].b.available > 0) { issueActive = k; break; }
+                }
+                showIssueResults(true);
+            }
+        }
+
+        document.addEventListener('click', e => {
+            if (!e.target.closest('#issue-book-box')) document.getElementById('issue-book-results')?.classList.add('hidden');
+        });
+
+        // Tanlangan kitob o'chirilgan yoki tugab qolgan bo'lsa, tanlovni bekor qiladi
+        function renderIssueSelect() {
+            const id = document.getElementById('issue-book-id')?.value;
+            if (id) {
+                const b = books.find(x => x.id === id);
+                if (!b || b.available <= 0) clearIssueBook();
+            }
+        }
+
+        function handleIssueBook(e) {
+            e.preventDefault();
+            const bookId = document.getElementById('issue-book-id').value;
+            if (!bookId) {
+                alert("Iltimos, avval kitobni qidirib, ro'yxatdan tanlang!");
+                document.getElementById('issue-book-search').focus();
+                return;
+            }
+            const userName = document.getElementById('issue-user-name').value;
+            const userClass = document.getElementById('issue-user-class').value;
+            const dueDateFormatted = document.getElementById('issue-due-date-text').value;
+
+            const parts = dueDateFormatted.split('.');
+            if (parts.length !== 3 || parts[0].length !== 2 || parts[1].length !== 2 || parts[2].length !== 4) {
+                alert("Iltimos, sanani DD.MM.YYYY formatida to'g'ri kiriting! (Masalan: 19.09.2026)");
+                return;
+            }
+            const isoDueDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+
+            const book = books.find(b => b.id === bookId);
+            if (!book || book.available <= 0) {
+                alert("Tanlash uchun kitob mavjud emas!");
+                return;
+            }
+
+            book.available--;
+            borrowers.push({
+                id: Date.now(),
+                userName,
+                userClass,
+                bookId: book.id,
+                bookTitle: book.title,
+                issueDate: new Date().toISOString().split('T')[0],
+                dueDate: isoDueDate
+            });
+
+            saveData();
+            e.target.reset();
+            clearIssueBook();
+            setDefaultDueDate();
+            alert("Kitob muvaffaqiyatli berildi!");
+        }
+
+        function renderActiveBorrowsList() {
+            const container = document.getElementById('activeBorrowsList');
+            if (!container) return;
+
+            const queryInput = document.getElementById('searchReturnInput');
+            const query = queryInput ? queryInput.value.toLowerCase().trim() : '';
+
+            const filteredBorrows = borrowers.filter(b =>
+                b.userName.toLowerCase().includes(query) ||
+                (b.userClass && b.userClass.toLowerCase().includes(query)) ||
+                b.bookTitle.toLowerCase().includes(query)
+            );
+
+            if (filteredBorrows.length === 0) {
+                container.innerHTML = `<p class="text-sm text-slate-400 text-center py-8">Mos keluvchi ijaradagi kitoblar topilmadi.</p>`;
+                return;
+            }
+
+            container.innerHTML = filteredBorrows.map(b => `
+                <div class="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-xl hover:border-blue-500/50 transition">
+                    <div>
+                        <h4 class="font-bold text-sm text-slate-800 dark:text-slate-200">${esc(b.bookTitle)}</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            <span class="font-semibold text-slate-700 dark:text-slate-300">${esc(b.userName)}</span> (${esc(b.userClass || '-')}) |
+                            Muddati: <span class="text-rose-600 dark:text-rose-400 font-semibold">${formatDate(b.dueDate)}</span>
+                        </p>
+                    </div>
+                    <button type="button" onclick="returnBook(${b.id})" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition">
+                        Qabul qilish
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function returnBook(borrowId) {
+            const borrowerIndex = borrowers.findIndex(b => b.id === borrowId);
+            if (borrowerIndex !== -1) {
+                const item = borrowers[borrowerIndex];
+                const book = books.find(b => b.id === item.bookId);
+                if (book) {
+                    book.available = Math.min(book.total, book.available + 1);
+                }
+                borrowers.splice(borrowerIndex, 1);
+                saveData();
+                alert("Kitob muvaffaqiyatli qabul qilib olindi!");
+            }
+        }
+
+        function renderBorrowersTable() {
+            const tbody = document.getElementById('borrowersTableBody');
+            if (!tbody) return;
+            if (borrowers.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400 text-sm">Hozirda kitob olib ketgan kitobxonlar yo'q.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = borrowers.map(b => `
+                <tr>
+                    <td class="p-4 font-semibold text-slate-800 dark:text-slate-200">${esc(b.userName)}</td>
+                    <td class="p-4"><span class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded text-xs font-mono font-bold">${esc(b.userClass || '-')}</span></td>
+                    <td class="p-4">${esc(b.bookTitle)}</td>
+                    <td class="p-4 text-slate-500 dark:text-slate-400">${formatDate(b.issueDate)}</td>
+                    <td class="p-4 font-semibold text-rose-600 dark:text-rose-400">${formatDate(b.dueDate)}</td>
+                    <td class="p-4 text-right">
+                        <button type="button" onclick="returnBook(${b.id})" class="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 px-3 py-1.5 rounded-lg text-xs font-semibold transition">
+                            Qaytarildi
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        /* ===== ISHGA TUSHIRISH ===== */
+        document.addEventListener('DOMContentLoaded', async () => {
+            initTheme();
+            setDefaultDueDate();
+            updateAllViews();
+            try {
+                await DB.open();
+                const saved = await DB.getAll();
+                if (saved.books === undefined && saved.borrowers === undefined) {
+                    // Birinchi ishga tushish: localStorage'dagi eski ma'lumotlarni bazaga ko'chiramiz
+                    await DB.saveAll(books, borrowers);
+                } else {
+                    books = saved.books || [];
+                    borrowers = saved.borrowers || [];
+                }
+                setDbStatus(true);
+                if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
+            } catch (err) {
+                console.error(err);
+                setDbStatus(false);
+            }
+            updateAllViews();
+        });
+    </script>
+</body>
+</html>
